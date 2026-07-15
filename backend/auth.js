@@ -53,6 +53,22 @@ async function handleRegister(e) {
         document.getElementById('successModal').style.display = 'flex';
     } catch (error) {
         console.error('Error:', error);
+        
+        // MVP Failsafe: Jika koneksi ke Supabase gagal (misal karena URL dummy / fetch failed),
+        // simulasikan proses sign-up agar alur (user journey) tetap berjalan
+        if (error.message === 'Failed to fetch' || error.message?.includes('fetch')) {
+            console.log('Failsafe: simulating successful registration in MVP..');
+            localStorage.setItem('userName', payload.nama_lengkap);
+            // Simpan data kredensial sementara untuk keperluan login di versi mockup
+            localStorage.setItem('mockUserEmail', payload.email);
+            localStorage.setItem('mockUserWa', payload.whatsapp);
+            localStorage.setItem('mockUserPassword', payload.password);
+            
+            document.getElementById('modalMessage').innerText = "Pendaftaran berhasil! (Simulation Mode)";
+            document.getElementById('successModal').style.display = 'flex';
+            return;
+        }
+
         alert('Gagal Mendaftar: ' + (error.message || 'Terjadi kesalahan jaringan.'));
         btnSubmit.innerHTML = originalText;
         btnSubmit.disabled = false;
@@ -104,6 +120,32 @@ async function handleLogin(e) {
         }
     } catch (err) {
         console.error('Error Login:', err);
+        
+        // MVP Failsafe: simulasi login jika error fetch
+        if (err.message === 'Failed to fetch' || err.message?.includes('fetch')) {
+            const mockEmail = localStorage.getItem('mockUserEmail');
+            const mockWa = localStorage.getItem('mockUserWa');
+            const mockPass = localStorage.getItem('mockUserPassword');
+            
+            if ((loginId === mockEmail || loginId === mockWa) && loginPassword === mockPass) {
+                console.log('Failsafe: simulating successful login in MVP..');
+                localStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('flashMessage', JSON.stringify({
+                    title: 'Login Berhasil',
+                    message: `Selamat datang kembali, ${localStorage.getItem('userName')}! Siap untuk mendominasi lapangan hari ini?`
+                }));
+                window.location.href = '../index.html';
+                return;
+            } else if (mockEmail || mockWa) {
+                alert('Maaf, Email/Whatsapp atau Kata Sandi Anda salah. (Simulation Mode)');
+                btnSubmit.innerHTML = originalText;
+                btnSubmit.disabled = false;
+                btnSubmit.style.opacity = '1';
+                btnSubmit.style.cursor = 'pointer';
+                return;
+            }
+        }
+        
         alert('Terjadi kesalahan pada server saat login.');
         btnSubmit.innerHTML = originalText;
         btnSubmit.disabled = false;
